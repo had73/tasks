@@ -9,10 +9,11 @@ import { useAppData } from "@/hooks/useAppData";
 import { UserAvatarGroup } from "@/components/UserAvatar";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import TaskDialog from "@/components/TaskDialog";
+import TaskDialog, { MultiSelect } from "@/components/TaskDialog";
 import TaskDetailSheet from "@/components/TaskDetailSheet";
 import Timeline from "@/components/Timeline";
-import { List as ListIcon, LayoutGrid, GanttChartSquare, ArrowUpDown, X } from "lucide-react";
+import Kanban from "@/components/Kanban";
+import { List as ListIcon, LayoutGrid, GanttChartSquare, Columns3, ArrowUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -22,10 +23,10 @@ export default function Tasks({ onlyMine = false }) {
   const [tasks, setTasks] = useState([]);
   const [view, setView] = useState("list");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [labelFilter, setLabelFilter] = useState("all");
-  const [assigneeFilter, setAssigneeFilter] = useState(onlyMine ? "me" : "all");
-  const [dueFilter, setDueFilter] = useState("all"); // all, overdue, today, week
+  const [statusFilter, setStatusFilter] = useState([]);
+  const [labelFilter, setLabelFilter] = useState([]);
+  const [assigneeFilter, setAssigneeFilter] = useState([]);
+  const [dueFilter, setDueFilter] = useState("all");
   const [sortBy, setSortBy] = useState("due_date");
   const [sortDir, setSortDir] = useState("asc");
   const [createOpen, setCreateOpen] = useState(false);
@@ -34,11 +35,7 @@ export default function Tasks({ onlyMine = false }) {
 
   const load = async () => {
     try {
-      const params = {};
-      if (search) params.q = search;
-      if (statusFilter !== "all") params.status_id = statusFilter;
-      if (labelFilter !== "all") params.label_id = labelFilter;
-      if (assigneeFilter !== "all") params.assignee_id = assigneeFilter === "me" ? user.id : assigneeFilter;
+      const params = search ? { q: search } : {};
       const { data } = await api.get("/tasks", { params });
       setTasks(data);
     } catch (e) { toast.error(apiError(e)); }
@@ -47,8 +44,7 @@ export default function Tasks({ onlyMine = false }) {
   useEffect(() => {
     const t = setTimeout(load, 300);
     return () => clearTimeout(t);
-    // eslint-disable-next-line
-  }, [search, statusFilter, labelFilter, assigneeFilter]);
+  }, [search]);
 
   const statusById = useMemo(() => Object.fromEntries(statuses.map(s => [s.id, s])), [statuses]);
   const labelById = useMemo(() => Object.fromEntries(labels.map(l => [l.id, l])), [labels]);
@@ -58,13 +54,13 @@ export default function Tasks({ onlyMine = false }) {
     const today = new Date().toISOString().slice(0, 10);
     const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
     let list = tasks;
-    if (dueFilter === "overdue") {
-      list = list.filter(t => t.due_date && t.due_date < today && !statusById[t.status_id]?.is_terminal);
-    } else if (dueFilter === "today") {
-      list = list.filter(t => t.due_date === today);
-    } else if (dueFilter === "week") {
-      list = list.filter(t => t.due_date && t.due_date >= today && t.due_date <= weekEnd);
-    }
+    if (onlyMine && user) list = list.filter(t => (t.assignee_ids || []).includes(user.id));
+    if (statusFilter.length) list = list.filter(t => statusFilter.includes(t.status_id));
+    if (labelFilter.length) list = list.filter(t => (t.label_ids || []).some(id => labelFilter.includes(id)));
+    if (assigneeFilter.length) list = list.filter(t => (t.assignee_ids || []).some(id => assigneeFilter.includes(id)));
+    if (dueFilter === "overdue") list = list.filter(t => t.due_date && t.due_date < today && !statusById[t.status_id]?.is_terminal);
+    else if (dueFilter === "today") list = list.filter(t => t.due_date === today);
+    else if (dueFilter === "week") list = list.filter(t => t.due_date && t.due_date >= today && t.due_date <= weekEnd);
     const sorted = [...list].sort((a, b) => {
       let av, bv;
       if (sortBy === "title") { av = a.title.toLowerCase(); bv = b.title.toLowerCase(); }
@@ -76,11 +72,10 @@ export default function Tasks({ onlyMine = false }) {
       return 0;
     });
     return sorted;
-  }, [tasks, dueFilter, sortBy, sortDir, statusById, labelById]);
+  }, [tasks, onlyMine, user, statusFilter, labelFilter, assigneeFilter, dueFilter, sortBy, sortDir, statusById, labelById]);
 
   const resetFilters = () => {
-    setStatusFilter("all"); setLabelFilter("all"); setDueFilter("all");
-    if (!onlyMine) setAssigneeFilter("all");
+    setStatusFilter([]); setLabelFilter([]); setAssigneeFilter([]); setDueFilter("all");
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -90,70 +85,73 @@ export default function Tasks({ onlyMine = false }) {
     <Layout search={search} setSearch={setSearch} onCreateTask={() => setCreateOpen(true)}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">{onlyMine ? "Moje úkoly" : "Úkoly"}</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight" data-testid="page-title">{onlyMine ? "Moje úkoly" : "Úkoly"}</h1>
           <p className="text-sm text-zinc-500 mt-1">{filtered.length} úkolů</p>
         </div>
         <Tabs value={view} onValueChange={setView}>
           <TabsList className="bg-white border border-zinc-200">
             <TabsTrigger value="list" data-testid="view-list"><ListIcon className="w-4 h-4 mr-1.5" />Seznam</TabsTrigger>
             <TabsTrigger value="cards" data-testid="view-cards"><LayoutGrid className="w-4 h-4 mr-1.5" />Karty</TabsTrigger>
+            <TabsTrigger value="kanban" data-testid="view-kanban"><Columns3 className="w-4 h-4 mr-1.5" />Kanban</TabsTrigger>
             <TabsTrigger value="timeline" data-testid="view-timeline"><GanttChartSquare className="w-4 h-4 mr-1.5" />Timeline</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <Card className="p-3 mb-4 bg-white border border-zinc-200 flex flex-wrap items-center gap-2">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px] h-9" data-testid="filter-status"><SelectValue placeholder="Stav" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Všechny stavy</SelectItem>
-            {statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={labelFilter} onValueChange={setLabelFilter}>
-          <SelectTrigger className="w-[160px] h-9" data-testid="filter-label"><SelectValue placeholder="Štítek" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Všechny štítky</SelectItem>
-            {labels.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {!onlyMine && (
-          <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-            <SelectTrigger className="w-[180px] h-9" data-testid="filter-assignee"><SelectValue placeholder="Osoba" /></SelectTrigger>
+      <Card className="p-3 mb-4 bg-white border border-zinc-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 items-start">
+          <MultiSelect
+            items={statuses.map(s => ({ id: s.id, label: s.name, color: s.color }))}
+            selected={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="Všechny stavy"
+            testid="filter-status"
+          />
+          <MultiSelect
+            items={labels.map(l => ({ id: l.id, label: l.name, color: l.color }))}
+            selected={labelFilter}
+            onChange={setLabelFilter}
+            placeholder="Všechny štítky"
+            testid="filter-label"
+          />
+          <MultiSelect
+            items={users.filter(u => u.active).map(u => ({ id: u.id, label: `${u.first_name} ${u.last_name}`, sub: u.email }))}
+            selected={assigneeFilter}
+            onChange={setAssigneeFilter}
+            placeholder="Všechny osoby"
+            testid="filter-assignee"
+          />
+          <Select value={dueFilter} onValueChange={setDueFilter}>
+            <SelectTrigger className="w-full mt-1.5 h-10" data-testid="filter-due"><SelectValue placeholder="Všechny termíny" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Všechny osoby</SelectItem>
-              <SelectItem value="me">Moje úkoly</SelectItem>
-              {users.filter(u => u.active).map(u => <SelectItem key={u.id} value={u.id}>{u.first_name} {u.last_name}</SelectItem>)}
+              <SelectItem value="all">Všechny termíny</SelectItem>
+              <SelectItem value="overdue">Po termínu</SelectItem>
+              <SelectItem value="today">Dnes</SelectItem>
+              <SelectItem value="week">Tento týden</SelectItem>
             </SelectContent>
           </Select>
-        )}
-        <Select value={dueFilter} onValueChange={setDueFilter}>
-          <SelectTrigger className="w-[160px] h-9" data-testid="filter-due"><SelectValue placeholder="Termín" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Všechny termíny</SelectItem>
-            <SelectItem value="overdue">Po termínu</SelectItem>
-            <SelectItem value="today">Dnes</SelectItem>
-            <SelectItem value="week">Tento týden</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="mx-1 h-6 w-px bg-zinc-200" />
-        <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-[170px] h-9" data-testid="sort-by"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="due_date">Termín</SelectItem>
-            <SelectItem value="created_at">Datum vytvoření</SelectItem>
-            <SelectItem value="updated_at">Datum změny</SelectItem>
-            <SelectItem value="title">Název</SelectItem>
-            <SelectItem value="status">Stav</SelectItem>
-            <SelectItem value="label">Štítek</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")} data-testid="sort-dir">
-          <ArrowUpDown className="w-3.5 h-3.5 mr-1" />{sortDir === "asc" ? "Vzestupně" : "Sestupně"}
-        </Button>
-        <Button variant="ghost" size="sm" onClick={resetFilters} data-testid="reset-filters">
-          <X className="w-3.5 h-3.5 mr-1" />Vymazat
-        </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-zinc-100">
+          <span className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mr-1">Řadit</span>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[170px] h-9" data-testid="sort-by"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="due_date">Termín</SelectItem>
+              <SelectItem value="created_at">Datum vytvoření</SelectItem>
+              <SelectItem value="updated_at">Datum změny</SelectItem>
+              <SelectItem value="title">Název</SelectItem>
+              <SelectItem value="status">Stav</SelectItem>
+              <SelectItem value="label">Štítek</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")} data-testid="sort-dir">
+            <ArrowUpDown className="w-3.5 h-3.5 mr-1" />{sortDir === "asc" ? "Vzestupně" : "Sestupně"}
+          </Button>
+          <div className="flex-1" />
+          <Button variant="ghost" size="sm" onClick={resetFilters} data-testid="reset-filters">
+            <X className="w-3.5 h-3.5 mr-1" />Vymazat filtry
+          </Button>
+        </div>
       </Card>
 
       {view === "list" && (
@@ -238,6 +236,11 @@ export default function Tasks({ onlyMine = false }) {
             <div className="col-span-full p-8 text-center text-sm text-zinc-500 border border-dashed border-zinc-200 rounded-md">Žádné úkoly</div>
           )}
         </div>
+      )}
+
+      {view === "kanban" && (
+        <Kanban tasks={filtered} statuses={statuses} labels={labels} users={users}
+          onOpen={(id) => setDetailId(id)} onChanged={load} />
       )}
 
       {view === "timeline" && (

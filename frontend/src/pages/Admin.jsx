@@ -41,6 +41,7 @@ function UsersAdmin() {
   const { users, reload } = useAppData();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(null);
   const { user: me } = useAuth();
 
   const filtered = users.filter(u =>
@@ -57,13 +58,29 @@ function UsersAdmin() {
     } catch (e) { toast.error(apiError(e)); }
   };
 
+  const create = async () => {
+    if (!creating.email || !creating.password || !creating.first_name || !creating.last_name) {
+      toast.error("Vyplňte všechna povinná pole"); return;
+    }
+    if (creating.password.length < 6) { toast.error("Heslo musí mít alespoň 6 znaků"); return; }
+    try {
+      await api.post(`/users`, creating);
+      toast.success("Uživatel vytvořen"); setCreating(null); reload();
+    } catch (e) { toast.error(apiError(e)); }
+  };
+
+  const emptyUser = { email: "", password: "", first_name: "", last_name: "", role: "user", avatar_url: "", active: true };
+
   return (
     <Card className="bg-white border border-zinc-200 overflow-hidden">
-      <div className="p-3 border-b border-zinc-200 flex items-center gap-2">
+      <div className="p-3 border-b border-zinc-200 flex items-center justify-between gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <Input placeholder="Hledat uživatele…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 h-9" data-testid="admin-users-search" />
         </div>
+        <Button className="bg-zinc-900 hover:bg-zinc-800 h-9" onClick={() => setCreating(emptyUser)} data-testid="admin-users-new">
+          <Plus className="w-4 h-4 mr-1" /> Nový uživatel
+        </Button>
       </div>
       <table className="w-full text-sm">
         <thead className="bg-zinc-50 text-xs uppercase tracking-wider text-zinc-500">
@@ -126,6 +143,35 @@ function UsersAdmin() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>Zrušit</Button>
             <Button onClick={save} className="bg-zinc-900" data-testid="admin-user-save">Uložit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!creating} onOpenChange={(v) => !v && setCreating(null)}>
+        <DialogContent data-testid="admin-user-create-dialog">
+          <DialogHeader><DialogTitle>Nový uživatel</DialogTitle></DialogHeader>
+          {creating && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Jméno *</Label><Input value={creating.first_name} onChange={(e) => setCreating({ ...creating, first_name: e.target.value })} className="mt-1.5" data-testid="new-user-firstname" /></div>
+                <div><Label>Příjmení *</Label><Input value={creating.last_name} onChange={(e) => setCreating({ ...creating, last_name: e.target.value })} className="mt-1.5" data-testid="new-user-lastname" /></div>
+              </div>
+              <div><Label>E-mail *</Label><Input type="email" value={creating.email} onChange={(e) => setCreating({ ...creating, email: e.target.value })} className="mt-1.5" data-testid="new-user-email" /></div>
+              <div><Label>Heslo * (min. 6 znaků)</Label><Input type="password" value={creating.password} onChange={(e) => setCreating({ ...creating, password: e.target.value })} className="mt-1.5" data-testid="new-user-password" /></div>
+              <div><Label>Avatar URL</Label><Input value={creating.avatar_url || ""} onChange={(e) => setCreating({ ...creating, avatar_url: e.target.value })} className="mt-1.5" placeholder="https://…" /></div>
+              <div>
+                <Label>Role</Label>
+                <Select value={creating.role} onValueChange={(v) => setCreating({ ...creating, role: v })}>
+                  <SelectTrigger className="mt-1.5" data-testid="new-user-role"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="user">Uživatel</SelectItem><SelectItem value="admin">Administrátor</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2"><Switch checked={creating.active} onCheckedChange={(v) => setCreating({ ...creating, active: v })} /><Label>Aktivní</Label></div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreating(null)}>Zrušit</Button>
+            <Button onClick={create} className="bg-zinc-900" data-testid="new-user-save">Vytvořit</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -128,6 +128,15 @@ class UserOut(BaseModel):
     active: bool = True
     created_at: str
 
+class AdminUserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+    first_name: str
+    last_name: str
+    role: str = "user"
+    avatar_url: Optional[str] = None
+    active: bool = True
+
 class UserAdminUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
@@ -264,6 +273,21 @@ async def google_session(request: Request, response: Response):
 async def list_users(user: dict = Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(500)
     return users
+
+@api.post("/users")
+async def admin_create_user(data: AdminUserCreate, admin: dict = Depends(require_admin)):
+    email = data.email.lower()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Email již existuje")
+    doc = {
+        "id": str(uuid.uuid4()), "email": email,
+        "password_hash": hash_password(data.password),
+        "first_name": data.first_name, "last_name": data.last_name,
+        "avatar_url": data.avatar_url, "role": data.role,
+        "active": data.active, "created_at": now_iso(),
+    }
+    await db.users.insert_one(doc)
+    return strip_id(doc)
 
 @api.patch("/users/{user_id}")
 async def admin_update_user(user_id: str, data: UserAdminUpdate, admin: dict = Depends(require_admin)):
