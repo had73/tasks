@@ -1,0 +1,115 @@
+{
+  "theme": "hybrid_fullstack",
+  "style_archetype": "High-End Swiss Material (Archetype 4) + Tactile Neumorphism",
+  "philosophy": "Reject generic, floaty Material Design. Adopt 'Neo-Material': physical surfaces defined by crisp 1px borders, subtle ambient shadows, and extreme data clarity. Neutral baseline with highly intentional status colors.",
+  "typography": {
+    "headings": {
+      "font_family": "Manrope",
+      "import_url": "@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');",
+      "rules": "Used for App Bar, Dialog Titles, Page Titles. Use tracking-tight for all headings > text-2xl. Use font-semibold or font-bold to create hierarchy without massive scaling. Max size text-4xl."
+    },
+    "body": {
+      "font_family": "IBM Plex Sans",
+      "import_url": "@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');",
+      "rules": "Highly legible for data-heavy tables, timelines, chips, and inputs. Use leading-relaxed for WYSIWYG task descriptions."
+    }
+  },
+  "colors": {
+    "background": "bg-zinc-50 (Neutral, very light gray) for the main application canvas to create subtle contrast with white cards.",
+    "primary": "bg-zinc-900 text-white for primary CTAs and active states. Absolute precision and authority.",
+    "surface": "bg-white for Cards, Dialogs, Drawers. Must use crisp 1px borders (border-zinc-200).",
+    "accents": {
+      "overdue": "Terracotta/Red (bg-red-50 text-red-700 border-red-200) for Počítačově po termínu.",
+      "today_active": "Cobalt/Blue (bg-blue-50 text-blue-700 border-blue-200) for Dnes / Moje úkoly.",
+      "done": "Sage/Green (bg-emerald-50 text-emerald-700 border-emerald-200) for Hotovo.",
+      "tags": "Use muted pastel backgrounds with dark text for high contrast (e.g., bg-amber-50 text-amber-800)."
+    }
+  },
+  "visual_enhancers": {
+    "surfaces": "Use 'Tactile Polish' for Cards - flat white backgrounds with 1px subtle borders (border-border). On hover, add a slight lift (-translate-y-0.5) and a soft ambient shadow (shadow-md).",
+    "glassmorphism": "For the sticky App Bar, use backdrop-blur-xl bg-white/70 with a 1px bottom border (border-zinc-200/50). DO NOT use completely transparent headers.",
+    "buttons": "Slightly rounded (rounded-md) with interaction animations (active:scale-95). Primary is solid dark, secondary is outline or ghost.",
+    "empty_states": "Never show blank screens in the Dashboard. Use subtle dotted borders, gray text, and a clear 'Create Task' CTA.",
+    "progress_indicators": "Use thin, elegant linear progress bars. No chunky spinners."
+  },
+  "layouts": {
+    "dashboard": "Bento Grid Protocol (Mode B). Dense data presentation. Use grid-cols-1 md:grid-cols-4. Top row: KPI cards (col-span-1). Middle row: Wide charts or task lists (col-span-2 or 3).",
+    "navigation": "Navigation Drawer (Left Sidebar) + Sticky App Bar. Sidebar should be collapsible (icon-only mode) on desktop to save space.",
+    "task_list": "Data Tables with inline actions on hover. Rows should have a subtle hover state (hover:bg-zinc-50).",
+    "timeline": "Chronological horizontal scrolling view. Use colored pills/bars with rounded-md to denote duration. Sticky left column for task names.",
+    "task_detail": "Slide-over panel (Sheet) or massive Dialog. Two-column layout: left for TipTap WYSIWYG description/history, right for metadata (status, assignees, dates, chips)."
+  },
+  "component_guidelines": {
+    "App Bar": "Sticky top (z-40), glassmorphic, containing global search autocomplete, notifications, and profile avatar.",
+    "Navigation Drawer": "Fixed left sidebar (z-30). Contains links: Dashboard, Tasks, Timeline, Admin. Use subtle gray backgrounds for the active item.",
+    "Cards": "Flat white background, 1px border. No native Material drop shadows by default. Use for KPI metrics and task bento boxes.",
+    "Chips": "Used for tags and statuses. Must have a soft background (e.g., bg-blue-50) and readable text (text-blue-700).",
+    "Dialogs": "Use for Task Quick Add and Admin forms. Must have backdrop-blur on the overlay to focus user attention.",
+    "Tabs": "Underline style (not pill). The active tab gets a dark 2px bottom border, inactive tabs are gray-500.",
+    "Data Tables": "Dense layout, left-aligned columns, hover effects on rows. Include checkboxes for multi-select operations.",
+    "WYSIWYG (TipTap)": "Clean formatting toolbar, subtle border, rich text support. Placed inside the Task Detail.",
+    "Date Picker & Autocomplete": "Use Shadcn popover and command components. Avoid ugly native browser inputs.",
+    "Avatars": "Rounded-full, 32px or 40px diameter. Use ring-2 ring-white for overlapping avatars in a group (Multi-select collaborators)."
+  },
+  "motion": {
+    "hover": "Subtle transform (-translate-y-0.5) on cards, background color shifts on rows/buttons.",
+    "drawer": "Smooth width transition (w-64 to w-16) for collapse/expand.",
+    "dialogs": "Scale up slightly (from 95% to 100%) and fade in using Framer Motion or Tailwind animate-in.",
+    "rule": "Respect prefers-reduced-motion. Do not use generic 'transition: all' globally."
+  },
+  "accessibility": {
+    "contrast": "Text must meet 4.5:1 ratio. No light gray text on white backgrounds.",
+    "focus": "focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2. Never remove focus outlines.",
+    "test_ids": "All interactive elements MUST include a data-testid attribute (e.g., data-testid='login-btn')."
+  },
+  "image_urls": {
+    "avatars": [
+      {
+        "url": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwzfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4NzI5MjY3N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Female team member avatar"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4NzI5MjY3N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Male team member avatar"
+      },
+      {
+        "url": "https://images.pexels.com/photos/37148308/pexels-photo-37148308.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Professional male avatar in suit"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1609436132311-e4b0c9370469?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHw0fHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4NzI5MjY3N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Female team member avatar in gray scarf"
+      }
+    ],
+    "auth_background": {
+      "url": "https://images.pexels.com/photos/7827838/pexels-photo-7827838.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Minimalistic composition featuring geometric shapes on black and beige split background. Use this for the image half of the Login/Register split screen."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "rules": "Use clean, outlined icons. 20px size for standard buttons, 16px for dense tables/chips."
+  },
+  "instructions_to_main_agent": [
+    "Prioritize Shadcn UI for standard interactions (Select, Dialog, Tabs, Table) but customize them heavily with Tailwind to match the Swiss High-Contrast aesthetic.",
+    "Use raw HTML/Tailwind for the Bento Grid Dashboard layouts to ensure exact spacing.",
+    "Implement the Navigation Drawer as a collapsible aside. Ensure it behaves as a slide-over Drawer on mobile devices.",
+    "Use TipTap for the WYSIWYG task description editor.",
+    "Never use generic placeholder text; use contextual task data (e.g., 'Q3 Marketing Plan' instead of 'Task 1').",
+    "Implement Sonner for toast/snackbar notifications.",
+    "For the Timeline, use CSS grids with horizontal scrolling. Color-code tasks based on their status.",
+    "The codebase uses .js files, not .tsx. Implement React components with standard JSX (.js) syntax."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic outputs. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently. DO NOT use dark colors as gradients.",
+    "Don't make generic centered layouts. Left-align most content for data legibility.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) for sticky headers.",
+    "You MUST NOT apply universal transition (e.g., transition: all). Always add transitions for specific interactive elements.",
+    "You MUST NOT center align the app container. Do not add `.App { text-align: center; }`.",
+    "NEVER use AI assistant Emoji characters. Use lucide-react icons.",
+    "Every interaction needs micro-animations - hover states, button presses, etc.",
+    "Use generous padding inside cards (p-5 or p-6) but keep grid gaps tight (gap-4) for dashboard density."
+  ]
+}

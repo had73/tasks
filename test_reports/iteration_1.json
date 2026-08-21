@@ -1,0 +1,38 @@
+{
+  "summary": "First-run validation of TaskFlow MVP. Backend auth, CRUD, RBAC, dashboard, task history all pass. Frontend login → dashboard (5 KPIs) → tasks → timeline (8 pills) → zoom → task detail → new-task dialog all functional. One MEDIUM issue: HTML sanitization strips <script> but does NOT strip on* event handler attributes (e.g., onerror=) — XSS vector remains.",
+  "tested_scope": ["backend", "frontend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/login (admin) returns token+user, sets cookie",
+    "GET /api/auth/me with cookie returns user",
+    "GET /api/statuses returns 5 seeded statuses",
+    "GET /api/labels returns seeded labels",
+    "GET /api/users returns seeded users including admin",
+    "GET /api/dashboard/stats returns open_count=7, overdue=1, today=1, week=4, by_status, by_label, recent",
+    "GET /api/tasks returns tasks list",
+    "POST /api/tasks creates task; PATCH updates; DELETE by admin works",
+    "GET /api/tasks/:id/history returns 'created' + 'title' change entries",
+    "HTML sanitization strips <script> tag",
+    "RBAC: non-admin (anna.novakova) POST /api/labels returns 403 'Admin required'",
+    "POST /api/auth/google/session without X-Session-ID returns 400 'Missing session id'",
+    "Frontend login page loads with data-testid selectors; admin login succeeds and redirects to /",
+    "Dashboard renders 5 KPI cards, recent tasks list, by-status counts, by-label chips",
+    "Tasks page: view-timeline shows 8 timeline-task-pill elements; zoom-month works",
+    "Task row click opens TaskDetailSheet dialog",
+    "new-task-btn opens dialog with title input"
+  ],
+  "failed": [
+    {
+      "area": "backend/security",
+      "issue": "HTML sanitization removes <script> but does NOT strip on* event attributes. Sent description_html '<p>hello</p><script>alert(1)</script><img src=x onerror=bad()>' — stored/returned as '<p>hello</p><img src=x onerror=bad()>'. onerror attribute preserved -> XSS risk.",
+      "evidence": "POST /api/tasks response description_html contains 'onerror=bad()'",
+      "priority": "MEDIUM"
+    }
+  ],
+  "action_items": [
+    "Strengthen sanitize_html in backend/server.py to strip all on* event handler attributes (e.g., use bleach with attributes whitelist, not just tag whitelist)"
+  ],
+  "success_rate": {"backend": "95%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true,
+  "notes": "Console warnings observed but non-blocking: TipTap 'Duplicate extension names: link, underline'; Radix Dialog missing aria-describedby. Consider fixing during polish pass."
+}
